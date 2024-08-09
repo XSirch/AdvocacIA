@@ -4,5 +4,3 @@ bcrypt
 pandas
 python-dotenv
 openai
-smtplib
-email
