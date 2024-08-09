@@ -1,0 +1,6 @@
+streamlit
+openai
+pandas
+sqlite3
+python-dotenv
+pyperclip
