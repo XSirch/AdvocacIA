@@ -163,7 +163,7 @@ def pagina_admin():
                 col4.write("Sim" if usuario[3] else "Não")  # É Admin?
                 if col5.button("Deletar", key=f"delete_{usuario[0]}"):
                     deletar_usuario(usuario[0])
-                    st.experimental_rerun()  # Recarrega a página após deleção
+                    st.rerun()  # Recarrega a página após deleção
         else:
             st.write("Nenhum usuário cadastrado.")
     else:
