@@ -43,7 +43,7 @@ def criar_primeiro_admin():
     conn.close()
 
 # Chame a função para criar o administrador
-criar_primeiro_admin()
+#criar_primeiro_admin()
 # Função para adicionar usuários com privilégio de administrador
 def adicionar_usuario(username, name, senha, chave, is_admin=0):
     hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
@@ -72,20 +72,8 @@ def verificar_chave_e_cadastrar(username, name, senha, chave_fornecida):
                   (name, hashed_password, username, chave_fornecida))
         conn.commit()
         st.success("Cadastro realizado com sucesso!")
-   
-    # Verificar se a chave já foi utilizada
-    c.execute("SELECT * FROM usuarios WHERE chave=?", (chave_fornecida,))
-    chave_usada = c.fetchone()
-    
-    if chave_usada:
-        st.error("Chave já utilizada. Por favor, entre em contato com o administrador.")
     else:
-        # Adicionar o novo usuário com a chave fornecida
-        hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
-        c.execute("INSERT INTO usuarios (username, name, senha, chave, is_admin) VALUES (?, ?, ?, ?, ?)",
-                  (username, name, hashed_password, chave_fornecida, 0))
-        conn.commit()
-        st.success("Cadastro realizado com sucesso!")
+        st.error("Chave inválida ou já utilizada!")
 
     conn.close()
 
