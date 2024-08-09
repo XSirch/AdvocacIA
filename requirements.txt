@@ -1,5 +1,8 @@
 streamlit
-openai
+streamlit-authenticator
+bcrypt
 pandas
 python-dotenv
-pyperclip
+openai
+smtplib
+email
