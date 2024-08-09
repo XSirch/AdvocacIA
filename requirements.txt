@@ -4,3 +4,4 @@ bcrypt
 pandas
 python-dotenv
 openai
+pyperclip
