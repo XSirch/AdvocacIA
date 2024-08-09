@@ -31,7 +31,7 @@ def enviar_chave_por_email(email_destino, chave, username):
         mensagem["To"] = email_destino
         mensagem["Subject"] = "Sua Chave de Cadastro"
         
-        corpo_email = f"Sua chave de cadastro é: {chave}\nE seu usuário é: {username}"
+        corpo_email = f"Sua chave de cadastro é: {chave}\nE seu usuário é: {username}\n\nAcesse o link: https://testess.streamlit.app"
         mensagem.attach(MIMEText(corpo_email, "plain"))
         
         servidor.send_message(mensagem)
