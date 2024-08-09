@@ -7,6 +7,8 @@ import pandas as pd
 import sqlite3
 from key_management import gerar_chave_unica, armazenar_chave_usuario, enviar_chave_por_email
 
+if 'is_admin' not in st.session_state:
+    st.session_state.is_admin = False
 # Configuração inicial do banco de dados
 def criar_tabela_usuarios():
     conn = sqlite3.connect('usuarios.db')
@@ -18,6 +20,31 @@ def criar_tabela_usuarios():
 
 criar_tabela_usuarios()
 
+def criar_primeiro_admin():
+    username = "admin"  # Escolha o nome de usuário do administrador
+    name = "Administrador"  # Nome completo do administrador
+    senha = "adminpassword"  # Escolha uma senha segura
+    chave = "adminkey"  # Pode ser qualquer valor, já que não será usada para este usuário
+    is_admin = 1  # Define este usuário como administrador
+
+    # Hash a senha
+    hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
+
+    # Inserir o administrador no banco de dados
+    conn = sqlite3.connect('usuarios.db')
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO usuarios (username, name, senha, chave, is_admin) VALUES (?, ?, ?, ?, ?)",
+                  (username, name, hashed_password, chave, is_admin))
+        conn.commit()
+        print("Usuário administrador criado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao criar administrador: {e}")
+    finally:
+        conn.close()
+
+# Chame a função para criar o administrador
+#criar_primeiro_admin()
 # Função para adicionar usuários com privilégio de administrador
 def adicionar_usuario(username, name, senha, chave, is_admin=0):
     hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
@@ -93,7 +120,7 @@ def pagina_admin():
             if username and email_destino:
                 chave = gerar_chave_unica()
                 armazenar_chave_usuario(username, chave)
-                enviar_chave_por_email(email_destino, chave)
+                enviar_chave_por_email(email_destino, chave, username)
                 st.success(f"Chave gerada e enviada para {email_destino}")
             else:
                 st.error("Por favor, preencha todos os campos.")
@@ -113,8 +140,24 @@ def pagina_login():
     hashed_passwords = [usuario[2] for usuario in usuarios]
     is_admin_list = {usuario[0]: usuario[3] for usuario in usuarios}  # Mapear is_admin
 
-    authenticator = stauth.Authenticate(names, usernames, hashed_passwords, "cookie_name", "random_key", cookie_expiry_days=30)
-    name, authentication_status, username = authenticator.login("Login", "main")
+    credentials = {
+        "usernames": {
+            username: {
+                "name": name,
+                "password": senha, 
+                "admin?": is_admin # Certifique-se de que esta senha esteja hashada
+            }
+            for username, name, senha, is_admin in usuarios
+        }
+    }
+    authenticator = stauth.Authenticate(
+            credentials=credentials,
+            cookie_name="cookie_name",
+            cookie_key="random_key",
+            cookie_expiry_days=30
+        )
+    
+    name, authentication_status, username = authenticator.login()
 
     if authentication_status:
         st.session_state.is_admin = bool(is_admin_list[username])  # Salvar status de admin na sessão
