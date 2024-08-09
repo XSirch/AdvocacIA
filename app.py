@@ -63,7 +63,7 @@ def verificar_chave_e_cadastrar(username, name, senha, chave_fornecida):
         st.error("Chave de acesso é obrigatória para o cadastro.")
         return
     # Verificar se a chave é válida (existe e não foi usada)
-    c.execute("SELECT * FROM usuarios WHERE chave=? AND name IS NULL", (chave_fornecida,))
+    c.execute("SELECT * FROM usuarios WHERE chave=? AND name=?", (chave_fornecida,""))
     chave_valida = c.fetchone()
     if chave_valida:
         # Adicionar o novo usuário com a chave fornecida
