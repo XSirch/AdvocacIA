@@ -58,11 +58,25 @@ def adicionar_usuario(username, name, senha, chave, is_admin=0):
 def verificar_chave_e_cadastrar(username, name, senha, chave_fornecida):
     conn = sqlite3.connect('usuarios.db')
     c = conn.cursor()
-
+    # Verificar se a chave foi fornecida
+    if not chave_fornecida:
+        st.error("Chave de acesso é obrigatória para o cadastro.")
+        return
+    # Verificar se a chave é válida (existe e não foi usada)
+    c.execute("SELECT * FROM usuarios WHERE chave=? AND name IS NULL", (chave_fornecida,))
+    chave_valida = c.fetchone()
+    if chave_valida:
+        # Adicionar o novo usuário com a chave fornecida
+        hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
+        c.execute("UPDATE usuarios SET name=?, senha=?, username=? WHERE chave=?", 
+                  (name, hashed_password, username, chave_fornecida))
+        conn.commit()
+        st.success("Cadastro realizado com sucesso!")
+   
     # Verificar se a chave já foi utilizada
     c.execute("SELECT * FROM usuarios WHERE chave=?", (chave_fornecida,))
     chave_usada = c.fetchone()
-
+    
     if chave_usada:
         st.error("Chave já utilizada. Por favor, entre em contato com o administrador.")
     else:
@@ -88,7 +102,7 @@ def obter_usuarios():
 def carregar_usuarios():
     conn = sqlite3.connect('usuarios.db')
     c = conn.cursor()
-    c.execute("SELECT username, name, chave, is_admin FROM usuarios")
+    c.execute("SELECT username, name, senha, chave, is_admin FROM usuarios")
     usuarios = c.fetchall()
     conn.close()
     return usuarios
@@ -145,6 +159,7 @@ def pagina_admin():
             if username and email_destino:
                 chave = gerar_chave_unica()
                 armazenar_chave_usuario(username, chave)
+                adicionar_usuario(username,"","", chave)
                 enviar_chave_por_email(email_destino, chave, username)
                 st.success(f"Chave gerada e enviada para {email_destino}")
             else:
@@ -156,12 +171,13 @@ def pagina_admin():
 
         if usuarios:
             for usuario in usuarios:
-                col1, col2, col3, col4, col5 = st.columns([2, 2, 3, 1, 1])
+                col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 2, 3, 1, 2])
                 col1.write(usuario[0])  # Username
                 col2.write(usuario[1])  # Nome
-                col3.write(usuario[2])  # Chave
-                col4.write("Sim" if usuario[3] else "Não")  # É Admin?
-                if col5.button("Deletar", key=f"delete_{usuario[0]}"):
+                col3.write(usuario[2])  # Senha
+                col4.write(usuario[3])  # Chave
+                col5.write("Sim" if usuario[4] else "Não")  # É Admin?
+                if col6.button("Deletar", key=f"delete_{usuario[0]}"):
                     deletar_usuario(usuario[0])
                     st.rerun()  # Recarrega a página após deleção
         else:
