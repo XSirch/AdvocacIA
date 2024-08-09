@@ -3,15 +3,10 @@ import pyperclip
 from openai import OpenAI
 import pandas as pd
 import sqlite3
-import os
-from dotenv import load_dotenv
+
 
 # Configure sua chave de API da OpenAI
-load_dotenv()
-
-client = OpenAI(
-  api_key=os.environ['OPENAI_API_KEY'],  # this is also the default, it can be omitted
-)
+client = OpenAI(api_key=st.secrets["api_keys"]["openai"])
 
 if 'documentos_pendentes' not in st.session_state:
     st.session_state.documentos_pendentes = []
