@@ -21,30 +21,29 @@ def criar_tabela_usuarios():
 criar_tabela_usuarios()
 
 def criar_primeiro_admin():
-    username = "admin"  # Escolha o nome de usuário do administrador
-    name = "Administrador"  # Nome completo do administrador
-    senha = "adminpassword"  # Escolha uma senha segura
-    chave = "adminkey"  # Pode ser qualquer valor, já que não será usada para este usuário
-    is_admin = 1  # Define este usuário como administrador
-
-    # Hash a senha
-    hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
-
-    # Inserir o administrador no banco de dados
     conn = sqlite3.connect('usuarios.db')
     c = conn.cursor()
-    try:
+    c.execute("SELECT * FROM usuarios WHERE is_admin=1")
+    admin_exists = c.fetchone()
+    if not admin_exists:
+        username = "admin"
+        name = "Administrador"
+        senha = "adminpass2024"
+        chave = "adminkey"
+        is_admin = 1
+
+        hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
+
         c.execute("INSERT INTO usuarios (username, name, senha, chave, is_admin) VALUES (?, ?, ?, ?, ?)",
                   (username, name, hashed_password, chave, is_admin))
         conn.commit()
-        print("Usuário administrador criado com sucesso!")
-    except Exception as e:
-        print(f"Erro ao criar administrador: {e}")
-    finally:
-        conn.close()
+        st.success("Usuário administrador criado com sucesso!")
+    else:
+        st.info("Administrador já existe.")
+    conn.close()
 
 # Chame a função para criar o administrador
-#criar_primeiro_admin()
+criar_primeiro_admin()
 # Função para adicionar usuários com privilégio de administrador
 def adicionar_usuario(username, name, senha, chave, is_admin=0):
     hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
@@ -59,12 +58,21 @@ def adicionar_usuario(username, name, senha, chave, is_admin=0):
 def verificar_chave_e_cadastrar(username, name, senha, chave_fornecida):
     conn = sqlite3.connect('usuarios.db')
     c = conn.cursor()
+
+    # Verificar se a chave já foi utilizada
     c.execute("SELECT * FROM usuarios WHERE chave=?", (chave_fornecida,))
-    if c.fetchone() is None:  # Chave é única e válida
-        adicionar_usuario(username, name, senha, chave_fornecida)
-        st.success("Cadastro realizado com sucesso!")
+    chave_usada = c.fetchone()
+
+    if chave_usada:
+        st.error("Chave já utilizada. Por favor, entre em contato com o administrador.")
     else:
-        st.error("Chave inválida ou já utilizada.")
+        # Adicionar o novo usuário com a chave fornecida
+        hashed_password = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
+        c.execute("INSERT INTO usuarios (username, name, senha, chave, is_admin) VALUES (?, ?, ?, ?, ?)",
+                  (username, name, hashed_password, chave_fornecida, 0))
+        conn.commit()
+        st.success("Cadastro realizado com sucesso!")
+
     conn.close()
 
 # Função para acessar o banco de dados e obter usuários
@@ -75,6 +83,23 @@ def obter_usuarios():
     usuarios = c.fetchall()
     conn.close()
     return usuarios
+
+# Função para acessar o banco de dados e obter usuários completo
+def carregar_usuarios():
+    conn = sqlite3.connect('usuarios.db')
+    c = conn.cursor()
+    c.execute("SELECT username, name, chave, is_admin FROM usuarios")
+    usuarios = c.fetchall()
+    conn.close()
+    return usuarios
+
+def deletar_usuario(username):
+    conn = sqlite3.connect('usuarios.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM usuarios WHERE username = ?", (username,))
+    conn.commit()
+    conn.close()
+    st.success(f"Usuário {username} deletado com sucesso!")
 
 # Função para definir um usuário como administrador
 def definir_administrador(username, status):
@@ -124,6 +149,23 @@ def pagina_admin():
                 st.success(f"Chave gerada e enviada para {email_destino}")
             else:
                 st.error("Por favor, preencha todos os campos.")
+
+        # Seção para visualização e deleção dos usuários
+        st.header("Usuários Cadastrados")
+        usuarios = carregar_usuarios()
+
+        if usuarios:
+            for usuario in usuarios:
+                col1, col2, col3, col4, col5 = st.columns([2, 2, 3, 1, 1])
+                col1.write(usuario[0])  # Username
+                col2.write(usuario[1])  # Nome
+                col3.write(usuario[2])  # Chave
+                col4.write("Sim" if usuario[3] else "Não")  # É Admin?
+                if col5.button("Deletar", key=f"delete_{usuario[0]}"):
+                    deletar_usuario(usuario[0])
+                    st.experimental_rerun()  # Recarrega a página após deleção
+        else:
+            st.write("Nenhum usuário cadastrado.")
     else:
         st.error("Você não tem permissão para acessar esta página.")
 
