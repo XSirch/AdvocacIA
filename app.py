@@ -28,7 +28,7 @@ def criar_primeiro_admin():
     if not admin_exists:
         username = "admin"
         name = "Administrador"
-        senha = "adminpass2024"
+        senha = "sua senha"
         chave = "adminkey"
         is_admin = 1
 
